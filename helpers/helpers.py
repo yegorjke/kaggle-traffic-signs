@@ -3,7 +3,7 @@ import os
 import random
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -37,6 +37,29 @@ def getDevice():
 
 def saveModel(model, savePath):
     torch.save(model.state_dict(), savePath)
+
+
+def exportOnnxModel(model, chw: Tuple[int, int, int], outputOnnxFile: Path):
+    c, h, w = chw
+
+    dummyInput = torch.randn(1, c, w, h)
+
+    model.eval()
+
+    torch.onnx.export(
+        model,
+        (dummyInput,),
+        outputOnnxFile,
+        export_params=True,
+        opset_version=11,
+        do_constant_folding=True,
+        input_names=["input_image"],
+        output_names=["predictions"],
+        dynamic_axes={
+            "input_image": {0: "batch_size"},
+            "predictions": {0: "batch_size"},
+        },
+    )
 
 
 def seed(s: int = 42):

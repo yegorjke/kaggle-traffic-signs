@@ -137,3 +137,9 @@ class TrafficSignDataset(Dataset):
 
     def __repr__(self):
         return f"{__class__.__name__}(labelsPath={self.labelsPath},dataDir={self.dataDir})"  # type:ignore
+
+
+def getLabelsNumber(skipLabels: Optional[Set[int]] = None):
+    return len(
+        TrafficSignDataset.getLabels(TRAFFIC_SIGN_DATASET_PATH / "labels.csv", skipLabels=skipLabels, hasHeader=True)
+    )
