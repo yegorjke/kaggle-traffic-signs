@@ -1,0 +1,49 @@
+[project]
+name = "kaggle-traffic-signs"
+version = "0.1.0"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+# Включаем базовые правила:
+# E (pycodestyle) — ошибки стиля (пробелы, отступы)
+# F (Pyflakes) — логические ошибки (неиспользуемые переменные, необъявленные импорты)
+# I (isort) — автоматическая сортировка импортов по алфавиту и группам
+select = ["E", "F", "I"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+# Заставляет Mypy проверять типы даже внутри функций, где вы не указали тип возвращаемого значения
+check_untyped_defs = true
+# Предупреждает, если вы возвращаете тип Any (очень полезно для отлова неявных багов)
+warn_return_any = true
+# Подсвечивает места, где вы написали # type: ignore, но ошибки там на самом деле нет
+warn_unused_ignores = true
+# Показывать красивые и понятные коды ошибок в консоли
+show_error_codes = true
+# Пока отключим жесткое требование типизировать вообще ВСЕ функции (чтобы не переписывать весь проект разом)
+disallow_untyped_defs = false
+
+# ==========================================
+# СПАСАТЕЛЬНЫЙ КРУГ ДЛЯ MACHINE LEARNING
+# ==========================================
+# Многие библиотеки для ML (особенно albumentations и torchvision) написаны на C++
+# или просто не имеют идеальных файлов с аннотациями типов.
+# Без этого блока Mypy выдаст вам сотни ложных ошибок при импортах.
+[[tool.mypy.overrides]]
+module = [
+    "torchvision.*",
+    "albumentations.*",
+    "matplotlib.*",
+    "seaborn.*",
+    "sklearn.*",
+    "pandas.*",
+    "torchmetrics.*"
+]
+ignore_missing_imports = true
