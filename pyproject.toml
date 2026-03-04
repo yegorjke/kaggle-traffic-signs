@@ -16,6 +16,7 @@ line-length = 120
 # I (isort) — автоматическая сортировка импортов по алфавиту и группам
 select = ["E", "F", "I"]
 ignore = ["E501"]
+# unfixable = ["F401"]
 
 [tool.mypy]
 python_version = "3.12"

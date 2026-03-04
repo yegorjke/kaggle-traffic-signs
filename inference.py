@@ -2,13 +2,9 @@ import argparse
 
 import albumentations as A
 import matplotlib.pyplot as plt
-
-# import albumentations
-# import cv2
 import numpy as np
 import torch
 import torch.nn as nn
-from albumentations.pytorch import ToTensorV2
 from torch.utils.data import DataLoader
 from torchvision import models
 
@@ -18,7 +14,8 @@ from dataloaders.traffic_sign_loader import (
     TRAFFIC_SIGN_SAVE_MODEL_FILENAME,
     TrafficSignDataset,
 )
-from helpers.helpers import getDevice, meanArray, stdArray, transposeToNumpyImage
+from helpers.dataset_wrapper import getLabels
+from helpers.helpers import getBaseImageTransforms, getDevice, meanArray, stdArray, transposeToNumpyImage
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Inference written in PyTorch")
@@ -29,7 +26,7 @@ if __name__ == "__main__":
 
     device = getDevice()
 
-    trainingLabels = TrafficSignDataset.getLabels(TRAFFIC_SIGN_DATASET_PATH / "labels.csv", hasHeader=True)
+    trainingLabels = getLabels(labelsPath=TRAFFIC_SIGN_DATASET_PATH / "labels.csv", hasHeader=True)
 
     modelPath = TRAFFIC_SIGN_SAVE_MODEL_DIR / ("resnet18_" + TRAFFIC_SIGN_SAVE_MODEL_FILENAME)
 
@@ -40,13 +37,7 @@ if __name__ == "__main__":
     inferenceModel = inferenceModel.to(device)
     inferenceModel.eval()
 
-    testTransforms = A.Compose(
-        [
-            A.Resize(64, 64),
-            A.Normalize(mean=meanArray(), std=stdArray()),
-            ToTensorV2(),
-        ]
-    )
+    testTransforms = A.Compose(getBaseImageTransforms(resize=(64, 64)))
     testDataset = TrafficSignDataset(TRAFFIC_SIGN_DATASET_PATH / "traffic_Data" / "TEST", transforms=testTransforms)
     testDataloader = DataLoader(testDataset, batch_size=32, shuffle=False, num_workers=1)
 

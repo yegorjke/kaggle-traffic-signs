@@ -7,9 +7,7 @@ import albumentations as A
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from albumentations.pytorch import ToTensorV2
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from torch.utils.data import DataLoader, random_split
 from torch.utils.tensorboard import SummaryWriter
 from torchmetrics import MetricCollection
 from torchmetrics.classification import MulticlassAccuracy, MulticlassF1Score, MulticlassPrecision, MulticlassRecall
@@ -23,12 +21,11 @@ from dataloaders.traffic_sign_loader import (
 )
 from helpers.helpers import (
     addImageGridToTensorboard,
+    getBaseImageTransforms,
     getDevice,
-    meanArray,
     saveModel,
     seed,
     setupLogger,
-    stdArray,
     writeConfusionMatrix,
 )
 
@@ -176,36 +173,28 @@ if __name__ == "__main__":
     validExtensions = set({".png", ".jpg", ".jpeg"})
     writer = SummaryWriter(log_dir="runs/" + TRAFFIC_SIGN_SAVE_MODEL_FILENAME)
 
-    trainTransforms = A.Compose(
-        [
-            A.Resize(64, 64),
-            A.Rotate(limit=15, p=0.5),
-            A.ShiftScaleRotate(shift_limit=0.05, scale_limit=0.05, rotate_limit=0, p=0.5),
-            A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
-            A.Blur(blur_limit=3, p=0.2),
-            A.Normalize(mean=meanArray(), std=stdArray()),
-            ToTensorV2(),
-        ]
-    )
+    baseTransforms = getBaseImageTransforms(resize=(64, 64))
 
-    trainDataset = TrafficSignDataset(
+    trainTransforms = [
+        A.Rotate(limit=15, p=0.5),
+        A.ShiftScaleRotate(shift_limit=0.05, scale_limit=0.05, rotate_limit=0, p=0.5),
+        A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
+        A.Blur(blur_limit=3, p=0.2),
+    ]
+
+    trainDataloader, validationDataloader = TrafficSignDataset.getDataloader(
         TRAFFIC_SIGN_DATASET_PATH / "traffic_Data" / "DATA",
         TRAFFIC_SIGN_DATASET_PATH / "labels.csv",
+        batchSize=batchSize,
+        numWorkers=workers,
+        split=split,
         skipLabels=skipLabels,
-        validExtenstions=validExtensions,
-        transforms=trainTransforms,
+        validExtensions=validExtensions,
+        transforms=A.Compose(trainTransforms + baseTransforms),
+        validationTransforms=A.Compose(baseTransforms),
     )
 
-    trainSize = int(len(trainDataset) * split)
-    validationSize = len(trainDataset) - trainSize
-    trainSplit, validationSplit = random_split(trainDataset, [trainSize, validationSize])
-
-    trainDataloader = DataLoader(trainSplit, batch_size=batchSize, num_workers=workers, shuffle=True, drop_last=True)
-    validationDataloader = DataLoader(
-        validationSplit, batch_size=batchSize, num_workers=workers, shuffle=False, drop_last=True
-    )
-
-    numLabels = len(trainDataset.labels)
+    numLabels = len(trainDataloader.dataset.labels)  # type: ignore
 
     addImageGridToTensorboard(trainDataloader, writer, "Train/AugmentedBatch")
     addImageGridToTensorboard(validationDataloader, writer, "Validation/AugmentedBatch")

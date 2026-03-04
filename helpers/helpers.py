@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from typing import Optional, Tuple
 
+import albumentations as A
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
@@ -143,3 +144,18 @@ def setupLogger(name: str, logfile: Optional[Path] = None):
     logger.addHandler(consoleHandler)
 
     return logger
+
+
+def extractTransforms(transforms, targets):
+    extracted = [t for t in transforms if isinstance(t, targets)]
+    return A.Compose(extracted)
+
+
+def getBaseImageTransforms(resize: Tuple[int, int]):
+    height, width = resize
+
+    return [
+        A.Resize(height, width),
+        A.Normalize(mean=meanArray(), std=stdArray()),
+        A.ToTensorV2(),
+    ]
